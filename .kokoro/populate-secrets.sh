@@ -28,13 +28,20 @@ mkdir -p ${SECRET_LOCATION}
 for key in $(echo ${SECRET_MANAGER_KEYS} | sed "s/,/ /g")
 do
   msg "Retrieving secret ${key}"
-  docker run --entrypoint=gcloud \
-    --volume=${KOKORO_GFILE_DIR}:${KOKORO_GFILE_DIR} \
-    gcr.io/google.com/cloudsdktool/cloud-sdk \
-    secrets versions access latest \
-    --project cloud-devrel-kokoro-resources \
-    --secret ${key} > \
-    "${SECRET_LOCATION}/${key}"
+  if [[ "${KOKORO_JOB_CLUSTER}" == "RBE" ]]; then
+    gcloud secrets versions access latest \
+      --project cloud-devrel-kokoro-resources \
+      --secret ${key} > \
+      "${SECRET_LOCATION}/${key}"
+  else
+    docker run --entrypoint=gcloud \
+      --volume=${KOKORO_GFILE_DIR}:${KOKORO_GFILE_DIR} \
+      gcr.io/google.com/cloudsdktool/cloud-sdk \
+      secrets versions access latest \
+      --project cloud-devrel-kokoro-resources \
+      --secret ${key} > \
+      "${SECRET_LOCATION}/${key}"
+  fi
   if [[ $? == 0 ]]; then
     msg "Secret written to ${SECRET_LOCATION}/${key}"
   else

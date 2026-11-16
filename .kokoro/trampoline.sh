@@ -26,6 +26,13 @@ set -eo pipefail
 # trap cleanup EXIT
 
 # Install Docker on the cbt-iw machine in order to use the Trampoline script.
+if [[ "${KOKORO_JOB_CLUSTER}" == "RBE" ]]; then
+  export KOKORO_ROOT="${KOKORO_ROOT:-/tmpfs}"
+  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+$JAVA_TOOL_OPTIONS }-XX:-UseContainerSupport"
+  $(dirname $0)/populate-secrets.sh # Secret Manager secrets.
+  chmod +x "${KOKORO_ARTIFACTS_DIR}/${TRAMPOLINE_BUILD_FILE}"
+  exec "${KOKORO_ARTIFACTS_DIR}/${TRAMPOLINE_BUILD_FILE}"
+fi
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu `lsb_release -cs` test"
